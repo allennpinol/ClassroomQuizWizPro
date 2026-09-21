@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Quiz Wiz - Interactive Learning Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    
+    <style>
+        body {
+            font-family: 'Fredoka', 'Inter', sans-serif;
+            touch-action: manipulation;
+            user-select: none;
+            overflow-x: hidden;
+        }
+        
+        /* Custom scrollbar for teacher dashboard */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Animations */
+        .bouncing-toy { animation: bounce 2s infinite ease-in-out; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .pulse-frenzy { animation: pulseFrenzy 0.8s infinite alternate; }
+        @keyframes pulseFrenzy {
+            0% { transform: scale(1); box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+            100% { transform: scale(1.05); box-shadow: 0 0 30px rgba(239, 68, 68, 0.8); }
+        }
+
+        .frenzy-bg {
+            background: linear-gradient(-45deg, #ef4444, #f97316, #eab308, #ef4444);
+            background-size: 400% 400%;
+            animation: gradientBG 3s ease infinite;
+        }
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .shake { animation: shake 0.5s; }
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            10% { transform: translate(-1px, -2px) rotate(-1deg); }
+            20% { transform: translate(-3px, 0px) rotate(1deg); }
+            30% { transform: translate(3px, 2px) rotate(0deg); }
+            40% { transform: translate(1px, -1px) rotate(1deg); }
+            50% { transform: translate(-1px, 2px) rotate(-1deg); }
+            60% { transform: translate(-3px, 1px) rotate(0deg); }
+            70% { transform: translate(3px, 1px) rotate(-1deg); }
+            80% { transform: translate(-1px, -1px) rotate(1deg); }
+            90% { transform: translate(1px, 2px) rotate(0deg); }
+            100% { transform: translate(1px, -2px) rotate(-1deg); }
+        }
+
+        .fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    </style>
+</head>
+<body id="app-body" class="bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 min-h-screen text-slate-800 flex flex-col items-center justify-between p-2 sm:p-4 transition-colors duration-500">
+
+    <header class="w-full max-w-6xl flex flex-wrap items-center justify-between bg-white/95 backdrop-blur-md rounded-2xl p-3 sm:p-4 shadow-xl mb-4 border border-white/40 gap-3 z-10 relative">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="switchScreen('menu')">
+            <div class="w-12 h-12 bg-amber-400 rounded-2xl flex items-center justify-center shadow-md text-2xl font-bold text-white border-2 border-white bouncing-toy">⭐</div>
+            <div>
+                <h1 id="app-title-header" class="text-xl sm:text-2xl font-extrabold bg-gradient-to-r from-indigo-600 to-pink-600 bg-clip-text text-transparent">Classroom Quiz Wiz</h1>
+                <p id="app-subtitle-header" class="text-xs text-slate-500 font-medium tracking-wide uppercase">Interactive Learning</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <button onclick="toggleAudio()" id="audio-toggle-btn" class="p-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-xl font-bold transition flex items-center shadow-sm text-sm" title="Toggle Sound">
+                🔊 <span class="hidden sm:inline ml-1">Sound</span>
+            </button>
+            <button onclick="toggleFullScreen()" class="p-2.5 bg-slate-100 hover:bg-slate-200 active:scale-95 rounded-xl font-bold transition flex items-center shadow-sm text-sm" title="Fullscreen">
+                📺 <span class="hidden sm:inline ml-1">Screen</span>
+            </button>
+            <button onclick="openTeacherModal()" class="px-4 py-2.5 bg-slate-800 text-white hover:bg-slate-700 active:scale-95 rounded-xl font-bold transition shadow-md flex items-center text-sm border border-slate-600">
+                ⚙️ <span class="ml-1.5 hidden sm:inline">Teacher Mode</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="w-full max-w-6xl flex-1 flex flex-col items-center justify-center relative mb-4">
+
+        <!-- 1. MAIN MENU SCREEN -->
+        <div id="screen-menu" class="w-full bg-white/95 backdrop-blur-xl rounded-3xl p-6 sm:p-10 shadow-2xl border-4 border-white/60 flex flex-col items-center text-center fade-in">
+            <div class="inline-block bg-indigo-100 text-indigo-700 text-xs font-extrabold px-4 py-1.5 rounded-full mb-4 uppercase tracking-widest shadow-sm">
+                Ready to Learn & Play
+            </div>
+            <h2 id="menu-game-title" class="text-4xl sm:text-6xl font-extrabold text-slate-800 mb-4 tracking-tight drop-shadow-sm">Classroom Quiz Wiz</h2>
+            <p id="menu-game-instructions" class="text-slate-600 text-base sm:text-lg max-w-2xl mb-8 font-medium">
+                Choose your game mode, set up your players or teams, and jump into the fun challenge! Fully customizable by teachers.
+            </p>
+
+            <div class="w-full grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 text-left flex flex-col justify-between hover:shadow-md transition">
+                    <div>
+                        <div class="text-3xl mb-2">🎮</div>
+                        <h3 class="font-bold text-lg text-indigo-900">Game Mode</h3>
+                    </div>
+                    <select id="select-game-mode" class="w-full mt-3 p-3 bg-white border-2 border-indigo-200 rounded-xl font-bold text-slate-700 focus:outline-none focus:border-indigo-500 shadow-sm cursor-pointer">
+                        <option value="team">Team Mode (Group vs Group)</option>
+                        <option value="individual">Individual Mode</option>
+                        <option value="practice">Practice Mode (No Points)</option>
+                    </select>
+                </div>
+
+                <div class="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 text-left flex flex-col justify-between hover:shadow-md transition">
+                    <div>
+                        <div class="text-3xl mb-2">⏱️</div>
+                        <h3 class="font-bold text-lg text-amber-900">Normal Timer</h3>
+                    </div>
+                    <select id="select-timer" class="w-full mt-3 p-3 bg-white border-2 border-amber-200 rounded-xl font-bold text-slate-700 focus:outline-none focus:border-amber-500 shadow-sm cursor-pointer">
+                        <option value="0">No Timer (Relaxed)</option>
+                        <option value="10">10 Seconds (Fast)</option>
+                        <option value="20" selected>20 Seconds (Standard)</option>
+                        <option value="30">30 Seconds</option>
+                        <option value="60">60 Seconds</option>
+                    </select>
+                </div>
+
+                <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4 text-left flex flex-col justify-between hover:shadow-md transition">
+                    <div>
+                        <div class="text-3xl mb-2">👥</div>
+                        <h3 class="font-bold text-lg text-emerald-900">Players / Teams</h3>
+                        <p id="menu-team-summary" class="text-xs text-slate-600 mt-1 font-semibold">0 teams ready.</p>
+                    </div>
+                    <button onclick="openTeacherModalTo('teams')" class="w-full mt-3 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold transition shadow-sm active:scale-95 text-sm">
+                        Manage Setup
+                    </button>
+                </div>
+            </div>
+
+            <button onclick="startGame()" class="w-full max-w-lg py-5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-3xl rounded-2xl shadow-xl hover:shadow-2xl transition transform hover:-translate-y-1 active:scale-95 flex items-center justify-center space-x-3 border-b-4 border-teal-800">
+                <span>🚀 START GAME</span>
+            </button>
+        </div>
+
+        <!-- 2. GAMEPLAY SCREEN -->
+        <div id="screen-game" class="w-full hidden flex flex-col items-center">
+            
+            <!-- Top Game HUD -->
+            <div class="w-full bg-white/95 backdrop-blur-md rounded-2xl p-3 shadow-xl mb-4 flex flex-wrap items-center justify-between gap-3 border border-white/60">
+                <div class="flex items-center space-x-2">
+                    <span id="game-hud-progress" class="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-sm font-extrabold border border-slate-200">Q 1/10</span>
+                    <div id="game-hud-turn-display" class="bg-indigo-100 text-indigo-800 px-3 py-1.5 rounded-lg font-bold text-sm border border-indigo-200 flex items-center">
+                        Turn: Team A
+                    </div>
+                </div>
+                
+                <div id="game-hud-timer-container" class="flex items-center space-x-2 bg-slate-800 px-4 py-1.5 rounded-xl shadow-inner border-2 border-slate-700">
+                    <span class="text-slate-300 font-bold text-sm">⏱️ Time:</span>
+                    <span id="game-hud-timer" class="font-extrabold text-white text-xl w-10 text-center">20</span>
+                </div>
+
+                <div class="flex items-center space-x-2">
+                    <!-- Frenzy Activation Button (Teacher only conceptually, but accessible for demo) -->
+                    <button id="btn-activate-frenzy" onclick="triggerFrenzyRound()" class="hidden px-3 py-1.5 bg-gradient-to-r from-rose-500 to-orange-500 text-white rounded-lg font-bold text-sm shadow-md hover:scale-105 active:scale-95 transition pulse-frenzy">
+                        ⚡ START FRENZY
+                    </button>
+                    <button onclick="skipQuestion()" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold text-sm transition shadow-sm" title="Skip Question">⏭️</button>
+                    <button onclick="pauseGame()" class="p-2 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-lg font-bold text-sm transition shadow-sm" title="Pause Game">⏸️</button>
+                    <button onclick="confirmStopGame()" class="p-2 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg font-bold text-sm transition shadow-sm" title="Stop Game">⏹️</button>
+                </div>
+            </div>
+
+            <!-- Frenzy Status Banner (Hidden Normally) -->
+            <div id="frenzy-status-banner" class="hidden w-full mb-4 frenzy-bg text-white rounded-2xl p-3 shadow-lg flex items-center justify-between border-2 border-yellow-300">
+                <div class="flex items-center space-x-3">
+                    <span class="text-3xl bouncing-toy">🔥</span>
+                    <div>
+                        <h3 class="font-extrabold text-xl leading-none">FRENZY ROUND!</h3>
+                        <p id="frenzy-streak-text" class="text-sm font-bold text-yellow-100">Streak: 0 | Multiplier: x1</p>
+                    </div>
+                </div>
+                <div class="bg-black/30 px-4 py-2 rounded-xl text-center">
+                    <span class="block text-xs font-bold uppercase text-yellow-200">Frenzy Time</span>
+                    <span id="frenzy-hud-timer" class="text-2xl font-extrabold font-mono">60</span>
+                </div>
+            </div>
+
+            <!-- Timer Progress Bar -->
+            <div id="timer-bar-container" class="w-full bg-white/40 h-3 rounded-full mb-4 overflow-hidden shadow-inner">
+                <div id="timer-bar" class="bg-gradient-to-r from-emerald-400 to-teal-500 h-full w-full transition-all duration-1000"></div>
+            </div>
+
+            <!-- Question Card Area -->
+            <div id="question-card" class="w-full bg-white/95 backdrop-blur-xl rounded-3xl p-6 sm:p-10 shadow-2xl border-4 border-white/60 flex flex-col items-center relative transition-all duration-300">
+                <div class="w-full flex justify-between items-center mb-4">
+                    <span id="question-category-badge" class="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold uppercase border border-indigo-100 tracking-wider shadow-sm">Category</span>
+                    <div class="flex items-center space-x-2">
+                        <button onclick="showHint()" id="btn-hint" class="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-800 rounded-xl text-xs font-bold transition shadow-sm flex items-center hidden">
+                            💡 Hint
+                        </button>
+                        <span id="question-points-badge" class="px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg text-sm font-extrabold border border-emerald-200 shadow-sm">+10 PTS</span>
+                    </div>
+                </div>
+
+                <div id="hint-box" class="hidden w-full bg-amber-50 border-2 border-amber-300 text-amber-900 p-4 rounded-2xl mb-4 text-base font-medium text-center shadow-inner">
+                    💡 <span id="hint-text">Hint goes here</span>
+                </div>
+
+                <h3 id="question-text" class="text-2xl sm:text-4xl lg:text-5xl font-extrabold text-slate-800 mb-6 text-center leading-tight">
+                    Question Text
+                </h3>
+
+                <!-- Image Container -->
+                <div id="question-image-container" class="hidden mb-8 w-full flex justify-center">
+                    <img id="question-image" src="" alt="Question Image" class="max-h-72 rounded-2xl object-contain border-4 border-slate-200 shadow-lg">
+                </div>
+
+                <!-- Answer Choices Grid -->
+                <div id="answers-container" class="w-full grid grid-cols-1 sm:grid-cols-2 gap-4 my-2">
+                    <!-- Dynamically injected choices -->
+                </div>
+
+                <!-- Short Answer Input -->
+                <div id="short-answer-container" class="hidden w-full max-w-xl flex flex-col sm:flex-row gap-3 mt-4">
+                    <input type="text" id="short-answer-input" placeholder="Type answer here..." class="flex-1 p-5 border-4 border-slate-200 rounded-2xl text-xl font-bold focus:outline-none focus:border-indigo-500 shadow-sm text-center">
+                    <button onclick="submitShortAnswer()" class="px-8 py-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-xl shadow-lg active:scale-95 transition border-b-4 border-indigo-800">Submit</button>
+                </div>
+            </div>
+
+            <!-- Scoreboard Footer Strip -->
+            <div id="live-scoreboard-strip" class="w-full bg-white/90 backdrop-blur-md rounded-2xl p-3 shadow-lg mt-4 flex items-center justify-center flex-wrap gap-2 sm:gap-4 border border-white/40">
+                <!-- Dynamically populated teams/players mini strip -->
+            </div>
+        </div>
+
+        <!-- 3. RESULTS SCREEN -->
+        <div id="screen-results" class="w-full hidden bg-white/95 backdrop-blur-xl rounded-3xl p-6 sm:p-10 shadow-2xl border-4 border-white/60 flex flex-col items-center text-center fade-in">
+            <div class="text-6xl mb-4 bouncing-toy">🏆</div>
+            <h2 class="text-4xl sm:text-6xl font-extrabold text-slate-800 mb-2 tracking-tight">Game Complete!</h2>
+            <p class="text-slate-600 text-lg sm:text-xl mb-8 font-medium">Amazing effort everyone! Here are the final standings.</p>
+
+            <div id="final-scoreboard-container" class="w-full max-w-3xl bg-slate-50 border-2 border-slate-200 rounded-2xl p-2 sm:p-4 mb-8 shadow-inner text-left max-h-[50vh] overflow-y-auto space-y-3">
+                <!-- Final results list -->
+            </div>
+
+            <div class="flex flex-wrap justify-center gap-4">
+                <button onclick="startGame()" class="px-8 py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-lg shadow-xl transition active:scale-95 border-b-4 border-indigo-800">
+                    🔄 Play Again
+                </button>
+                <button onclick="switchScreen('menu')" class="px-8 py-4 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-2xl font-bold text-lg shadow-md transition active:scale-95 border-b-4 border-slate-300">
+                    🏠 Main Menu
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- FRENZY BIG TRANSITION OVERLAY -->
+    <div id="modal-frenzy-intro" class="fixed inset-0 bg-black/80 backdrop-blur-md z-[60] flex items-center justify-center p-4 hidden">
+        <div class="text-center space-y-6">
+            <div class="text-8xl md:text-[150px] mb-4 bouncing-toy drop-shadow-[0_0_30px_rgba(239,68,68,0.8)]">🔥</div>
+            <h2 class="text-5xl md:text-8xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-orange-500 to-rose-600 shake uppercase italic tracking-tighter drop-shadow-lg">
+                Frenzy Round!
+            </h2>
+            <p class="text-2xl md:text-3xl text-white font-bold drop-shadow-md">Points Multiplied! Work Fast!</p>
+        </div>
+    </div>
+
+    <!-- STOP CONFIRMATION MODAL -->
+    <div id="modal-stop-confirm" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full shadow-2xl border-4 border-rose-200 text-center fade-in">
+            <div class="text-5xl mb-3">⚠️</div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-2">End Game Early?</h3>
+            <p class="text-sm text-slate-600 mb-6 font-medium">Are you sure you want to stop? Current scores will be sent to the results screen.</p>
+            <div class="flex space-x-3">
+                <button onclick="closeStopConfirm()" class="flex-1 py-3.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold transition">Cancel</button>
+                <button onclick="executeStopGame()" class="flex-1 py-3.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-lg transition">Yes, End Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PAUSE OVERLAY -->
+    <div id="modal-pause" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl border-4 border-indigo-200 text-center space-y-4 fade-in">
+            <div class="text-6xl bouncing-toy">⏸️</div>
+            <h3 class="text-3xl font-extrabold text-slate-800">Game Paused</h3>
+            <p class="text-base text-slate-600 font-medium mb-4">Take a breather. The timer is frozen.</p>
+            <button onclick="resumeGame()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold text-xl shadow-lg transition active:scale-95 border-b-4 border-indigo-800">Resume Game</button>
+        </div>
+    </div>
+
+    <!-- STEAL OPPORTUNITY BANNER -->
+    <div id="banner-steal" class="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[55] w-11/12 max-w-2xl bg-gradient-to-r from-purple-600 to-pink-600 border-4 border-white rounded-3xl p-8 shadow-2xl text-center hidden animate-bounce">
+        <div class="text-5xl mb-2">👀</div>
+        <h2 class="text-4xl md:text-5xl font-extrabold text-white mb-2 tracking-tight uppercase italic">Steal Opportunity!</h2>
+        <p id="steal-text" class="text-xl text-purple-100 font-bold mb-6">Team A missed! Who wants to steal the points?</p>
+        <button onclick="hideStealBanner()" class="px-8 py-4 bg-white text-purple-700 hover:bg-purple-50 rounded-2xl font-extrabold text-xl shadow-xl transition active:scale-95">Next Team's Turn ➔</button>
+    </div>
+
+    <!-- TEACHER PIN AUTH MODAL -->
+    <div id="modal-teacher-auth" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border-4 border-slate-300 text-center fade-in">
+            <div class="text-5xl mb-4">🔒</div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-2">Teacher Access</h3>
+            <p class="text-sm text-slate-600 mb-6 font-medium">Solve this problem to verify you are the teacher:</p>
+            <div id="auth-math-question" class="text-2xl font-extrabold text-slate-700 mb-4 bg-slate-100 p-4 rounded-xl border-2 border-slate-200">
+                What is 4 + 7?
+            </div>
+            <input type="number" id="auth-math-input" placeholder="Your answer" class="w-full p-4 border-2 border-slate-300 rounded-2xl text-center text-2xl font-bold mb-6 focus:outline-none focus:border-indigo-500 shadow-sm" onkeypress="if(event.key === 'Enter') verifyTeacherAuth()">
+            <div class="flex space-x-3">
+                <button onclick="closeTeacherAuth()" class="flex-1 py-3.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl font-bold transition">Cancel</button>
+                <button onclick="verifyTeacherAuth()" class="flex-1 py-3.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl font-bold shadow-lg transition">Enter Dashboard</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TEACHER DASHBOARD -->
+    <div id="modal-teacher-dashboard" class="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-4 hidden">
+        <div class="bg-slate-50 rounded-3xl w-full max-w-6xl h-[95vh] shadow-2xl border-4 border-slate-600 flex flex-col overflow-hidden fade-in">
+            
+            <!-- Dashboard Header -->
+            <div class="bg-slate-800 text-white p-4 sm:p-5 flex items-center justify-between shadow-md relative z-10">
+                <div class="flex items-center space-x-3">
+                    <span class="text-3xl">⚙️</span>
+                    <div>
+                        <h2 class="text-xl sm:text-2xl font-bold leading-tight">Teacher Control Panel</h2>
+                        <p class="text-xs text-slate-400 font-medium">100% Editable Game Settings & Content</p>
+                    </div>
+                </div>
+                <button onclick="closeTeacherDashboard()" class="w-10 h-10 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center font-bold text-xl transition border border-white/20">✕</button>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex border-b-2 border-slate-200 bg-white overflow-x-auto px-4 pt-3 gap-2 shadow-sm relative z-10 shrink-0">
+                <button onclick="switchTeacherTab('questions')" id="tab-btn-questions" class="px-5 py-3 font-bold text-sm rounded-t-2xl bg-slate-100 text-indigo-700 border-t-2 border-x-2 border-slate-200 shadow-sm">❓ Questions (<span id="dash-q-count">0</span>)</button>
+                <button onclick="switchTeacherTab('teams')" id="tab-btn-teams" class="px-5 py-3 font-bold text-sm rounded-t-2xl text-slate-500 hover:text-slate-800 transition">👥 Players / Teams</button>
+                <button onclick="switchTeacherTab('frenzy')" id="tab-btn-frenzy" class="px-5 py-3 font-bold text-sm rounded-t-2xl text-slate-500 hover:text-slate-800 transition">🔥 Frenzy Settings</button>
+                <button onclick="switchTeacherTab('settings')" id="tab-btn-settings" class="px-5 py-3 font-bold text-sm rounded-t-2xl text-slate-500 hover:text-slate-800 transition">⚙️ Game Config</button>
+                <button onclick="switchTeacherTab('io')" id="tab-btn-io" class="px-5 py-3 font-bold text-sm rounded-t-2xl text-slate-500 hover:text-slate-800 transition">💾 Import / Export</button>
+            </div>
+
+            <!-- Dashboard Content Areas -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50 relative">
+                
+                <!-- TAB: QUESTIONS -->
+                <div id="dash-tab-questions" class="space-y-4 max-w-5xl mx-auto">
+                    <div class="flex flex-wrap justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200 gap-4">
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-800">Question Bank</h3>
+                            <p class="text-xs text-slate-500 font-medium">Add or edit questions. Check the "Frenzy Pts" for bonus round values.</p>
+                        </div>
+                        <button onclick="openQuestionEditorModal()" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md transition text-sm flex items-center">
+                            ➕ Add Question
+                        </button>
+                    </div>
+                    <div id="questions-list-container" class="space-y-3 pb-10">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- TAB: TEAMS / PLAYERS (Includes manual score adjustment) -->
+                <div id="dash-tab-teams" class="space-y-6 hidden max-w-4xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                        <div class="flex justify-between items-end border-b border-slate-100 pb-3">
+                            <h3 class="font-bold text-lg text-slate-800">Manage Roster & Scores</h3>
+                            <button onclick="resetAllScores()" class="text-xs font-bold text-rose-600 hover:text-rose-800 px-3 py-1.5 bg-rose-50 rounded-lg">Reset All Scores to 0</button>
+                        </div>
+                        
+                        <div class="flex gap-3">
+                            <input type="text" id="new-team-input" placeholder="Player or Team Name (e.g. Sarah, Team Blue)" class="flex-1 p-3 border-2 border-slate-200 rounded-xl font-bold focus:outline-none focus:border-indigo-500 bg-slate-50">
+                            <button onclick="addTeamFromDashboard()" class="px-6 py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl shadow-md transition whitespace-nowrap">Add Entity</button>
+                        </div>
+                        <div id="teams-list-container" class="space-y-3 mt-4">
+                            <!-- Rendered dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: FRENZY SETTINGS -->
+                <div id="dash-tab-frenzy" class="space-y-6 hidden max-w-3xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
+                        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                            <div>
+                                <h3 class="font-bold text-lg text-slate-800 flex items-center">🔥 Frenzy Round Configuration</h3>
+                                <p class="text-xs text-slate-500">Configure the bonus high-stakes round.</p>
+                            </div>
+                            <label class="flex items-center cursor-pointer relative">
+                                <input type="checkbox" id="config-frenzy-enable" class="sr-only">
+                                <div class="toggle-bg w-14 h-8 bg-slate-300 rounded-full transition-colors"></div>
+                                <div class="toggle-dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform shadow-md"></div>
+                            </label>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Frenzy Timer (Seconds)</label>
+                                <input type="number" id="config-frenzy-time" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold bg-slate-50" value="60">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Streak Multiplier Bonus</label>
+                                <select id="config-frenzy-streak" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold bg-slate-50">
+                                    <option value="none">Disabled (Always x1)</option>
+                                    <option value="moderate" selected>Moderate (x2 after 2, max x3)</option>
+                                    <option value="insane">Insane (x2, x3, x4 fast scaling)</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Missed Question Penalty / Steal</label>
+                                <select id="config-frenzy-miss" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold bg-slate-50">
+                                    <option value="0">0 Points, No Penalty, Next Turn</option>
+                                    <option value="steal" selected>Allow other teams to STEAL!</option>
+                                    <option value="-10">Lose 10 Points</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button onclick="saveSettings()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition">Save Frenzy Settings</button>
+                    </div>
+                </div>
+
+                <!-- TAB: GENERAL SETTINGS -->
+                <div id="dash-tab-settings" class="space-y-6 hidden max-w-3xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800 border-b border-slate-100 pb-2">Global Settings</h3>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Game Title</label>
+                            <input type="text" id="config-title" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold text-slate-700 mb-1">Welcome Text / Instructions</label>
+                            <textarea id="config-instructions" rows="2" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold bg-slate-50"></textarea>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Default Normal Points</label>
+                                <input type="number" id="config-points" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-slate-700 mb-1">Default Frenzy Points</label>
+                                <input type="number" id="config-frenzy-default-points" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold bg-slate-50">
+                            </div>
+                        </div>
+                        <button onclick="saveSettings()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition">Save Global Settings</button>
+                    </div>
+                </div>
+
+                <!-- TAB: IMPORT / EXPORT -->
+                <div id="dash-tab-io" class="space-y-6 hidden max-w-3xl mx-auto">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
+                        <h3 class="font-bold text-lg text-slate-800 border-b border-slate-100 pb-2">Manage Question Files</h3>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-200">
+                                <h4 class="font-bold text-indigo-900 mb-2">📥 Download / Backup</h4>
+                                <p class="text-xs text-indigo-700 mb-4 font-medium">Save your current game state or download a blank template.</p>
+                                <div class="space-y-2">
+                                    <button onclick="downloadJSONBackup()" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-sm transition">Download Complete Backup (JSON)</button>
+                                    <button onclick="downloadCSVSample()" class="w-full py-2.5 bg-white border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-100 font-bold rounded-xl text-sm transition">Download CSV Template</button>
+                                </div>
+                            </div>
+                            <div class="bg-emerald-50 p-5 rounded-2xl border border-emerald-200 flex flex-col justify-between">
+                                <div>
+                                    <h4 class="font-bold text-emerald-900 mb-2">📤 Upload Questions</h4>
+                                    <p class="text-xs text-emerald-700 mb-4 font-medium">Upload a previously saved JSON or CSV file to replace the bank.</p>
+                                </div>
+                                <input type="file" id="file-upload-input" accept=".json, .csv" onchange="handleFileUpload(event)" class="w-full text-xs text-slate-600 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-emerald-600 file:text-white hover:file:bg-emerald-700 cursor-pointer">
+                            </div>
+                        </div>
+                        
+                        <div class="bg-rose-50 p-4 rounded-2xl border border-rose-200 flex justify-between items-center">
+                            <div>
+                                <h4 class="font-bold text-rose-900 text-sm">Reset to Sample Math Content</h4>
+                                <p class="text-xs text-rose-700">Deletes current questions and restores default.</p>
+                            </div>
+                            <button onclick="resetToDefaultData()" class="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl text-sm transition">Factory Reset</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- QUESTION EDITOR MODAL (with Local Image Upload) -->
+    <div id="modal-question-editor" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[55] flex items-center justify-center p-2 sm:p-4 hidden">
+        <div class="bg-white rounded-3xl p-5 sm:p-8 max-w-2xl w-full max-h-[95vh] overflow-y-auto shadow-2xl border-4 border-indigo-200 space-y-5 fade-in">
+            <div class="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 id="modal-q-editor-title" class="text-xl font-extrabold text-slate-800">Edit Question</h3>
+                <button onclick="closeQuestionEditorModal()" class="text-slate-400 hover:text-slate-700 font-bold text-xl bg-slate-100 w-8 h-8 rounded-full flex items-center justify-center">✕</button>
+            </div>
+            <input type="hidden" id="edit-q-id">
+            
+            <div>
+                <label class="block text-sm font-bold text-slate-700 mb-1">Question Text</label>
+                <textarea id="edit-q-text" rows="2" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold text-lg focus:outline-none focus:border-indigo-500 bg-slate-50" placeholder="e.g. What is 5 x 6?"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Type</label>
+                    <select id="edit-q-type" onchange="onQuestionTypeChange()" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold bg-slate-50">
+                        <option value="mc">Multiple Choice (4 options)</option>
+                        <option value="tf">True / False</option>
+                        <option value="short">Short Answer (Exact Match)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-1">Category</label>
+                    <input type="text" id="edit-q-category" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold bg-slate-50" placeholder="e.g. Science, Math">
+                </div>
+            </div>
+
+            <!-- Image Upload Section -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <label class="block text-sm font-bold text-slate-700 mb-2">Include an Image (Optional)</label>
+                <div class="flex flex-col sm:flex-row gap-3 items-center">
+                    <input type="file" id="edit-q-image-file" accept="image/*" class="w-full text-xs text-slate-600 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 cursor-pointer">
+                    <span class="text-xs font-bold text-slate-400">OR URL:</span>
+                    <input type="text" id="edit-q-image-url" class="flex-1 p-2 border border-slate-300 rounded-lg text-sm bg-white" placeholder="https://...">
+                </div>
+                <!-- Hidden canvas for resizing before save -->
+                <canvas id="image-resize-canvas" class="hidden"></canvas>
+                <div id="image-preview-container" class="mt-2 hidden">
+                    <img id="image-preview" src="" class="max-h-24 rounded border border-slate-300">
+                    <button onclick="clearImageSelection()" class="text-xs font-bold text-rose-600 mt-1">Remove Image</button>
+                </div>
+            </div>
+
+            <!-- Options Container -->
+            <div id="edit-q-options-container" class="space-y-3 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                <label class="block text-sm font-bold text-indigo-900">Answer Choices (Select the correct one)</label>
+                <div class="flex items-center gap-3">
+                    <input type="radio" name="correct-radio" value="0" checked class="w-6 h-6 text-indigo-600 cursor-pointer">
+                    <input type="text" id="edit-opt-0" placeholder="Option A" class="flex-1 p-3 border-2 border-slate-200 rounded-xl font-bold bg-white">
+                </div>
+                <div class="flex items-center gap-3">
+                    <input type="radio" name="correct-radio" value="1" class="w-6 h-6 text-indigo-600 cursor-pointer">
+                    <input type="text" id="edit-opt-1" placeholder="Option B" class="flex-1 p-3 border-2 border-slate-200 rounded-xl font-bold bg-white">
+                </div>
+                <div class="flex items-center gap-3">
+                    <input type="radio" name="correct-radio" value="2" class="w-6 h-6 text-indigo-600 cursor-pointer">
+                    <input type="text" id="edit-opt-2" placeholder="Option C" class="flex-1 p-3 border-2 border-slate-200 rounded-xl font-bold bg-white">
+                </div>
+                <div class="flex items-center gap-3">
+                    <input type="radio" name="correct-radio" value="3" class="w-6 h-6 text-indigo-600 cursor-pointer">
+                    <input type="text" id="edit-opt-3" placeholder="Option D" class="flex-1 p-3 border-2 border-slate-200 rounded-xl font-bold bg-white">
+                </div>
+            </div>
+
+            <!-- Short Answer Correct Answer Container -->
+            <div id="edit-q-short-container" class="hidden bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+                <label class="block text-sm font-bold text-indigo-900 mb-2">Correct Answer (Short Text)</label>
+                <input type="text" id="edit-short-correct" class="w-full p-3 border-2 border-slate-200 rounded-xl font-bold bg-white" placeholder="Exact answer (case-insensitive)">
+            </div>
+
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Normal Pts</label>
+                    <input type="number" id="edit-q-points" class="w-full p-2.5 border-2 border-slate-200 rounded-xl font-bold bg-slate-50" value="10">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-rose-700 mb-1">🔥 Frenzy Pts</label>
+                    <input type="number" id="edit-q-frenzy-points" class="w-full p-2.5 border-2 border-rose-200 rounded-xl font-bold bg-rose-50 text-rose-800" value="25">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Hint (Opt)</label>
+                    <input type="text" id="edit-q-hint" class="w-full p-2.5 border-2 border-slate-200 rounded-xl font-bold bg-slate-50" placeholder="Clue">
+                </div>
+            </div>
+
+            <button onclick="saveQuestionFromModal()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-lg rounded-xl shadow-lg transition active:scale-95 border-b-4 border-indigo-800">Save Question to Bank</button>
+        </div>
+    </div>
+
+    <script>
+        // --- AUDIO ENGINE ---
+        let audioEnabled = true;
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+
+        function initAudio() {
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        function playSound(type) {
+            if (!audioEnabled) return;
+            initAudio();
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'click') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
+                osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'correct') {
+                osc.type = 'triangle';
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+                    osc.frequency.setValueAtTime(freq, now + (i*0.1));
+                });
+                gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                osc.start(now); osc.stop(now + 0.5);
+            } else if (type === 'incorrect') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(200, now);
+                osc.frequency.linearRampToValueAtTime(100, now + 0.3);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'frenzy') {
+                // Siren effect
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.linearRampToValueAtTime(800, now + 0.4);
+                osc.frequency.linearRampToValueAtTime(400, now + 0.8);
+                gain.gain.setValueAtTime(0.15, now); gain.gain.linearRampToValueAtTime(0, now + 0.8);
+                osc.start(now); osc.stop(now + 0.8);
+            } else if (type === 'win') {
+                const notes = [523.25, 659.25, 783.99, 1046.50, 783.99, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
+                    o.connect(g); g.connect(audioCtx.destination);
+                    o.type = 'triangle';
+                    o.frequency.setValueAtTime(freq, now + idx * 0.15);
+                    g.gain.setValueAtTime(0.2, now + idx * 0.15);
+                    g.gain.linearRampToValueAtTime(0, now + idx * 0.15 + 0.2);
+                    o.start(now + idx * 0.15); o.stop(now + idx * 0.15 + 0.2);
+                });
+            }
+        }
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            document.getElementById('audio-toggle-btn').innerHTML = audioEnabled ? '🔊 <span class="hidden sm:inline ml-1">Sound</span>' : '🔇 <span class="hidden sm:inline ml-1">Muted</span>';
+            if (audioEnabled) { initAudio(); playSound('click'); }
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        // --- SAMPLE DATA ---
+        const sampleQuestions = [
+            { id: "q1", text: "What is 7 x 8?", type: "mc", options: ["54", "56", "64", "48"], correctAnswer: "1", hint: "7 groups of 8", points: 10, frenzyPoints: 25, category: "Multiplication", image: "" },
+            { id: "q2", text: "If you share 36 candies equally among 4 friends, how many does each get?", type: "mc", options: ["7", "8", "9", "10"], correctAnswer: "2", hint: "4 x ? = 36", points: 10, frenzyPoints: 20, category: "Division", image: "" },
+            { id: "q3", text: "Which shape has 4 equal sides and 4 right angles?", type: "mc", options: ["Rectangle", "Square", "Triangle", "Pentagon"], correctAnswer: "1", hint: "All sides same length.", points: 10, frenzyPoints: 15, category: "Geometry", image: "" },
+            { id: "q4", text: "True or False: 450 + 350 equals 800.", type: "tf", options: ["True", "False"], correctAnswer: "0", hint: "Add hundreds, then tens.", points: 10, frenzyPoints: 20, category: "Addition", image: "" },
+            { id: "q5", text: "Write the number: thirty-four thousand, two hundred five.", type: "short", options: [], correctAnswer: "34205", hint: "Thousands: 34,000. Hundreds: 205.", points: 15, frenzyPoints: 40, category: "Number Sense", image: "" }
+        ];
+
+        let gameState = {
+            config: {
+                title: "Classroom Quiz Wiz",
+                instructions: "Choose your game mode, set up your players or teams, and jump into the fun challenge!",
+                defaultPoints: 10,
+                defaultFrenzyPoints: 25,
+                defaultTimer: 20,
+                frenzy: {
+                    enabled: true,
+                    duration: 60,
+                    streakConfig: 'moderate', // none, moderate, insane
+                    missPenalty: 'steal' // 0, steal, -10
+                }
+            },
+            questions: [],
+            teams: [],
+            settings: { gameMode: "team", timerSeconds: 20 },
+            runtime: {
+                currentQuestionIndex: 0,
+                activeTeamIndex: 0,
+                activeQuestionsList: [],
+                timerInterval: null,
+                isPaused: false,
+                isFrenzyActive: false,
+                frenzyStreak: 0,
+                frenzyMultiplier: 1,
+                frenzyEndTime: 0
+            }
+        };
+
+        // --- STREAMING_CHUNK:Local Storage & Initialization... ---
+        function loadFromStorage() {
+            try {
+                const saved = localStorage.getItem('cqw_pro_state');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    // Merge configs carefully to preserve new keys if upgrading
+                    gameState.config = { ...gameState.config, ...(parsed.config || {}) };
+                    gameState.config.frenzy = { ...gameState.config.frenzy, ...(parsed.config?.frenzy || {}) };
+                    
+                    if (parsed.questions) gameState.questions = parsed.questions;
+                    if (parsed.teams) gameState.teams = parsed.teams;
+                }
+            } catch (e) { console.error("Storage load error", e); }
+
+            if (gameState.questions.length === 0) {
+                gameState.questions = JSON.parse(JSON.stringify(sampleQuestions));
+            }
+            if (gameState.teams.length === 0) {
+                gameState.teams = [
+                    { id: "t1", name: "Team Star 🌟", score: 0, stats: { correct:0, wrong:0, frenzyPts:0, maxStreak:0 } },
+                    { id: "t2", name: "Team Rocket 🚀", score: 0, stats: { correct:0, wrong:0, frenzyPts:0, maxStreak:0 } }
+                ];
+            }
+            updateMenuUI();
+        }
+
+        function saveToStorage() {
+            try {
+                localStorage.setItem('cqw_pro_state', JSON.stringify({
+                    config: gameState.config,
+                    questions: gameState.questions,
+                    teams: gameState.teams
+                }));
+            } catch (e) { 
+                console.error("Storage save error (possibly quota exceeded due to base64 images)", e);
+                if(e.name === 'QuotaExceededError') alertUserModal("Storage full! Try using image URLs instead of uploading large image files.");
+            }
+        }
+
+        window.onload = function() {
+            loadFromStorage();
+            updateToggleUI();
+        };
+
+        function switchScreen(screenName) {
+            playSound('click');
+            ['screen-menu', 'screen-game', 'screen-results'].forEach(s => document.getElementById(s).classList.add('hidden'));
+            document.getElementById(`screen-${screenName}`).classList.remove('hidden');
+            if (screenName === 'menu') updateMenuUI();
+            if (screenName === 'results') renderResultsScreen();
+        }
+
+        function updateMenuUI() {
+            document.getElementById('app-title-header').innerText = gameState.config.title;
+            document.getElementById('menu-game-title').innerText = gameState.config.title;
+            document.getElementById('menu-game-instructions').innerText = gameState.config.instructions;
+            document.getElementById('menu-team-summary').innerText = `${gameState.teams.length} configured. (${gameState.questions.length} Qs)`;
+        }
+
+        // --- STREAMING_CHUNK:Game Start & Question Rendering... ---
+        function startGame() {
+            playSound('click');
+            initAudio(); // Ensure audio unlocks on first user interaction
+            
+            gameState.settings.gameMode = document.getElementById('select-game-mode').value;
+            gameState.settings.timerSeconds = parseInt(document.getElementById('select-timer').value);
+
+            if (gameState.questions.length === 0) {
+                return alertUserModal("No questions available! Please add them in Teacher Mode.");
+            }
+            if (gameState.teams.length === 0 && gameState.settings.gameMode !== 'practice') {
+                return alertUserModal("Please add at least one Player or Team in Teacher Mode.");
+            }
+
+            // Reset scores & stats
+            gameState.teams.forEach(t => {
+                t.score = 0;
+                t.stats = { correct: 0, wrong: 0, frenzyPts: 0, maxStreak: 0 };
+            });
+
+            // Randomize questions for the run
+            gameState.runtime.activeQuestionsList = [...gameState.questions].sort(() => Math.random() - 0.5);
+            gameState.runtime.currentQuestionIndex = 0;
+            gameState.runtime.activeTeamIndex = 0;
+            gameState.runtime.isFrenzyActive = false;
+            
+            // UI Resets
+            document.getElementById('frenzy-status-banner').classList.add('hidden');
+            document.getElementById('app-body').classList.remove('frenzy-bg');
+            document.getElementById('btn-activate-frenzy').classList.toggle('hidden', !gameState.config.frenzy.enabled);
+
+            switchScreen('game');
+            loadCurrentQuestion();
+        }
+
+        function loadCurrentQuestion() {
+            const idx = gameState.runtime.currentQuestionIndex;
+            const qList = gameState.runtime.activeQuestionsList;
+
+            if (idx >= qList.length) {
+                if (gameState.runtime.isFrenzyActive) stopFrenzyRound(); // End frenzy gracefully
+                playSound('win');
+                confetti({ particleCount: 150, spread: 90, origin: { y: 0.6 }, colors: ['#4f46e5', '#ec4899', '#eab308'] });
+                return switchScreen('results');
+            }
+
+            const q = qList[idx];
+            const isFrenzy = gameState.runtime.isFrenzyActive;
+
+            // HUD Updates
+            document.getElementById('game-hud-progress').innerText = `Q ${idx + 1} / ${qList.length}`;
+            
+            const turnDisplay = document.getElementById('game-hud-turn-display');
+            if (gameState.teams.length > 0 && gameState.settings.gameMode !== 'practice') {
+                const team = gameState.teams[gameState.runtime.activeTeamIndex];
+                turnDisplay.innerText = `${gameState.settings.gameMode === 'individual' ? 'Player' : 'Turn'}: ${team.name}`;
+                turnDisplay.classList.remove('hidden');
+            } else {
+                turnDisplay.classList.add('hidden');
+            }
+
+            // Card details
+            document.getElementById('question-category-badge').innerText = q.category || 'General';
+            
+            const ptsBadge = document.getElementById('question-points-badge');
+            if (isFrenzy) {
+                ptsBadge.innerText = `🔥 ${q.frenzyPoints || gameState.config.defaultFrenzyPoints} PTS`;
+                ptsBadge.className = "px-3 py-1 bg-yellow-100 text-yellow-800 rounded-lg text-sm font-extrabold border border-yellow-300 shadow-sm pulse-frenzy";
+            } else {
+                ptsBadge.innerText = `+${q.points || gameState.config.defaultPoints} PTS`;
+                ptsBadge.className = "px-3 py-1 bg-emerald-100 text-emerald-800 rounded-lg text-sm font-extrabold border border-emerald-200 shadow-sm";
+            }
+
+            document.getElementById('question-text').innerText = q.text;
+
+            // Image
+            const imgCont = document.getElementById('question-image-container');
+            const imgEl = document.getElementById('question-image');
+            if (q.image) {
+                imgEl.src = q.image;
+                imgCont.classList.remove('hidden');
+            } else {
+                imgCont.classList.add('hidden');
+            }
+
+            // Hint
+            document.getElementById('hint-box').classList.add('hidden');
+            document.getElementById('btn-hint').classList.toggle('hidden', !(q.hint && q.hint.trim() !== ''));
+            if(q.hint) document.getElementById('hint-text').innerText = q.hint;
+
+            // Render Answers
+            const ansCont = document.getElementById('answers-container');
+            const shortCont = document.getElementById('short-answer-container');
+            ansCont.innerHTML = '';
+            shortCont.classList.add('hidden');
+
+            if (q.type === 'short') {
+                shortCont.classList.remove('hidden');
+                document.getElementById('short-answer-input').value = '';
+                setTimeout(() => document.getElementById('short-answer-input').focus(), 100);
+            } else {
+                const colors = ['bg-indigo-500', 'bg-pink-500', 'bg-teal-500', 'bg-amber-500'];
+                q.options.forEach((optText, oIdx) => {
+                    if(!optText) return; // Skip empty options
+                    const btn = document.createElement('button');
+                    const color = colors[oIdx % colors.length];
+                    btn.className = `w-full p-5 ${color} text-white font-extrabold text-xl sm:text-2xl rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-1 active:scale-95 transition border-b-4 border-black/20 flex items-center justify-between text-left`;
+                    btn.innerHTML = `<span class="flex-1 pr-2 drop-shadow-sm">${optText}</span> <span class="bg-black/20 w-10 h-10 rounded-xl flex items-center justify-center text-lg shadow-inner">${String.fromCharCode(65 + oIdx)}</span>`;
+                    btn.onclick = () => submitAnswer(oIdx.toString());
+                    ansCont.appendChild(btn);
+                });
+            }
+
+            renderLiveScoreboardStrip();
+            
+            // Timer logic
+            if (isFrenzy) {
+                document.getElementById('game-hud-timer-container').classList.add('hidden');
+                document.getElementById('timer-bar-container').classList.add('hidden');
+                // Frenzy has one continuous timer, handled elsewhere
+            } else {
+                document.getElementById('game-hud-timer-container').classList.remove('hidden');
+                document.getElementById('timer-bar-container').classList.remove('hidden');
+                startNormalTimer();
+            }
+        }
+
+        // --- STREAMING_CHUNK:Timer & Feedback Logic... ---
+        function startNormalTimer() {
+            clearInterval(gameState.runtime.timerInterval);
+            const limit = gameState.settings.timerSeconds;
+            if (limit <= 0) {
+                document.getElementById('game-hud-timer-container').classList.add('hidden');
+                document.getElementById('timer-bar-container').classList.add('hidden');
+                return;
+            }
+
+            const disp = document.getElementById('game-hud-timer');
+            const bar = document.getElementById('timer-bar');
+            disp.innerText = limit;
+            bar.style.width = '100%';
+            
+            let remainingMs = limit * 1000;
+            let lastTime = Date.now();
+
+            gameState.runtime.timerInterval = setInterval(() => {
+                if (gameState.runtime.isPaused) {
+                    lastTime = Date.now(); // freeze time
+                    return;
+                }
+                const now = Date.now();
+                remainingMs -= (now - lastTime);
+                lastTime = now;
+
+                if (remainingMs <= 0) {
+                    clearInterval(gameState.runtime.timerInterval);
+                    disp.innerText = 0;
+                    bar.style.width = '0%';
+                    playSound('incorrect');
+                    showFeedbackModal(false, "⏰ Time's Up!", 0);
+                } else {
+                    disp.innerText = Math.ceil(remainingMs / 1000);
+                    bar.style.width = `${(remainingMs / (limit * 1000)) * 100}%`;
+                    if (remainingMs < 4000) bar.className = "bg-rose-500 h-full w-full transition-all";
+                    else bar.className = "bg-gradient-to-r from-emerald-400 to-teal-500 h-full w-full transition-all";
+                }
+            }, 100);
+        }
+
+        function showHint() {
+            playSound('click');
+            document.getElementById('hint-box').classList.remove('hidden');
+        }
+
+        // --- STREAMING_CHUNK:Answer Processing & Frenzy Logic... ---
+        function submitShortAnswer() {
+            const val = document.getElementById('short-answer-input').value.trim().toLowerCase();
+            const q = gameState.runtime.activeQuestionsList[gameState.runtime.currentQuestionIndex];
+            const correctVal = q.correctAnswer.trim().toLowerCase();
+            processAnswerResult(val === correctVal, q);
+        }
+
+        function submitAnswer(selIdxStr) {
+            const q = gameState.runtime.activeQuestionsList[gameState.runtime.currentQuestionIndex];
+            processAnswerResult(selIdxStr === q.correctAnswer, q);
+        }
+
+        function processAnswerResult(isCorrect, q, isStealAttempt = false) {
+            clearInterval(gameState.runtime.timerInterval); // Stop normal timer
+            
+            const team = gameState.teams[gameState.runtime.activeTeamIndex];
+            const isFrenzy = gameState.runtime.isFrenzyActive;
+            
+            let ptsEarned = 0;
+            let feedbackMsg = "";
+            let currentMult = 1;
+
+            if (isCorrect) {
+                if (team && gameState.settings.gameMode !== 'practice') {
+                    team.stats.correct++;
+                    if (isFrenzy) {
+                        // Frenzy Scoring
+                        gameState.runtime.frenzyStreak++;
+                        if (team.stats.maxStreak < gameState.runtime.frenzyStreak) team.stats.maxStreak = gameState.runtime.frenzyStreak;
+                        
+                        // Calc multiplier
+                        const sc = gameState.config.frenzy.streakConfig;
+                        if (sc === 'moderate') {
+                            if (gameState.runtime.frenzyStreak >= 4) currentMult = 3;
+                            else if (gameState.runtime.frenzyStreak >= 2) currentMult = 2;
+                        } else if (sc === 'insane') {
+                            currentMult = Math.min(5, 1 + Math.floor(gameState.runtime.frenzyStreak / 1.5));
+                        }
+                        gameState.runtime.frenzyMultiplier = currentMult;
+                        
+                        const baseFrenzy = q.frenzyPoints || gameState.config.defaultFrenzyPoints;
+                        ptsEarned = baseFrenzy * currentMult;
+                        team.score += ptsEarned;
+                        team.stats.frenzyPts += ptsEarned;
+                        
+                        feedbackMsg = `🔥 +${ptsEarned} FRENZY POINTS!`;
+                        if(currentMult > 1) feedbackMsg += `<br><span class="text-sm">(${baseFrenzy} x${currentMult} Multiplier)</span>`;
+                    } else {
+                        // Normal Scoring
+                        ptsEarned = q.points || gameState.config.defaultPoints;
+                        team.score += ptsEarned;
+                        feedbackMsg = `+${ptsEarned} Points!`;
+                    }
+                } else {
+                    feedbackMsg = "Great Job!";
+                }
+                
+                playSound(isFrenzy ? 'frenzy' : 'correct');
+                if(isFrenzy) confetti({ particleCount: 50, colors: ['#ef4444', '#eab308'] });
+                else confetti({ particleCount: 50 });
+                
+                showFeedbackModal(true, feedbackMsg, ptsEarned);
+
+            } else {
+                // INCORRECT
+                if (team) team.stats.wrong++;
+                
+                let correctText = q.correctAnswer;
+                if (q.type === 'mc' || q.type === 'tf') {
+                    correctText = q.options[parseInt(q.correctAnswer)] || q.correctAnswer;
+                }
+
+                if (isFrenzy && !isStealAttempt) {
+                    gameState.runtime.frenzyStreak = 0;
+                    gameState.runtime.frenzyMultiplier = 1;
+                    
+                    const penaltyType = gameState.config.frenzy.missPenalty;
+                    if (penaltyType === '-10' && team && gameState.settings.gameMode !== 'practice') {
+                        team.score -= 10;
+                        ptsEarned = -10;
+                        feedbackMsg = `Incorrect! Lost 10 Points.<br><span class="text-lg">Answer: ${correctText}</span>`;
+                        playSound('incorrect');
+                        showFeedbackModal(false, feedbackMsg, ptsEarned);
+                    } else if (penaltyType === 'steal' && gameState.teams.length > 1 && gameState.settings.gameMode !== 'practice') {
+                        // Handle Steal - Pause frenzy timer
+                        playSound('incorrect');
+                        return triggerStealOpportunity(correctText); 
+                    } else {
+                        feedbackMsg = `Incorrect!<br><span class="text-lg">Answer: ${correctText}</span>`;
+                        playSound('incorrect');
+                        showFeedbackModal(false, feedbackMsg, 0);
+                    }
+                } else {
+                    feedbackMsg = `Incorrect!<br><span class="text-lg">Answer: ${correctText}</span>`;
+                    playSound('incorrect');
+                    showFeedbackModal(false, feedbackMsg, 0);
+                }
+            }
+            if(isFrenzy) updateFrenzyHUD();
+        }
+
+        // --- STREAMING_CHUNK:Steal & Feedback UI... ---
+        function triggerStealOpportunity(correctText) {
+            gameState.runtime.isPaused = true; // Pause frenzy timer
+            document.getElementById('banner-steal').classList.remove('hidden');
+            // Shift turn
+            gameState.runtime.activeTeamIndex = (gameState.runtime.activeTeamIndex + 1) % gameState.teams.length;
+            const newTeam = gameState.teams[gameState.runtime.activeTeamIndex];
+            document.getElementById('steal-text').innerText = `Missed! It is now ${newTeam.name}'s turn to steal!`;
+            
+            // Temporarily store correct answer for when they try
+            gameState.runtime.pendingStealAnswer = correctText;
+        }
+
+        function hideStealBanner() {
+            document.getElementById('banner-steal').classList.add('hidden');
+            gameState.runtime.isPaused = false; // Resume frenzy timer
+            
+            // Re-render HUD to show new team, keep question active
+            const team = gameState.teams[gameState.runtime.activeTeamIndex];
+            document.getElementById('game-hud-turn-display').innerText = `Turn: ${team.name}`;
+            
+            // We intercept the next submit to pass isStealAttempt=true
+            const oldSubmitAns = submitAnswer;
+            const oldShortAns = submitShortAnswer;
+            
+            const cleanupSteal = () => {
+                submitAnswer = oldSubmitAns;
+                submitShortAnswer = oldShortAns;
+            };
+
+            submitAnswer = (idx) => {
+                cleanupSteal();
+                const q = gameState.runtime.activeQuestionsList[gameState.runtime.currentQuestionIndex];
+                processAnswerResult(idx === q.correctAnswer, q, true);
+            };
+            submitShortAnswer = () => {
+                cleanupSteal();
+                const val = document.getElementById('short-answer-input').value.trim().toLowerCase();
+                const q = gameState.runtime.activeQuestionsList[gameState.runtime.currentQuestionIndex];
+                processAnswerResult(val === q.correctAnswer.trim().toLowerCase(), q, true);
+            };
+        }
+
+        function showFeedbackModal(isCorrect, messageHTML, pts) {
+            const existing = document.getElementById('feedback-banner');
+            if (existing) existing.remove();
+
+            const isFrenzy = gameState.runtime.isFrenzyActive;
+            const banner = document.createElement('div');
+            banner.id = 'feedback-banner';
+            banner.className = `fixed inset-0 z-[55] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn`;
+            
+            let colorClass = isCorrect ? 'border-emerald-400 bg-emerald-50' : 'border-rose-400 bg-rose-50';
+            let textClass = isCorrect ? 'text-emerald-800' : 'text-rose-800';
+            if (isFrenzy && isCorrect) {
+                colorClass = 'border-yellow-400 bg-gradient-to-br from-orange-100 to-yellow-100 frenzy-pulse-border';
+                textClass = 'text-orange-900';
+            }
+
+            banner.innerHTML = `
+                <div class="rounded-3xl p-8 max-w-md w-full shadow-2xl border-4 ${colorClass} text-center space-y-4 transform transition-all scale-100">
+                    <div class="text-7xl ${isCorrect?'bouncing-toy':''}">${isCorrect ? '🌟' : '❌'}</div>
+                    <h3 class="text-3xl font-extrabold ${textClass}">${messageHTML}</h3>
+                    <button onclick="advanceToNextQuestion()" class="w-full py-4 ${isCorrect ? 'bg-emerald-600' : 'bg-rose-600'} text-white rounded-2xl font-bold text-xl shadow-lg active:scale-95 border-b-4 border-black/20 mt-4">Continue ➔</button>
+                </div>
+            `;
+            document.body.appendChild(banner);
+
+            // Auto advance
+            if (isFrenzy && !gameState.runtime.isPaused) {
+                setTimeout(() => { if (document.getElementById('feedback-banner')) advanceToNextQuestion(); }, 2000);
+            }
+        }
+
+        function advanceToNextQuestion() {
+            const banner = document.getElementById('feedback-banner');
+            if (banner) banner.remove();
+
+            if (gameState.teams.length > 0) {
+                gameState.runtime.activeTeamIndex = (gameState.runtime.activeTeamIndex + 1) % gameState.teams.length;
+            }
+            gameState.runtime.currentQuestionIndex++;
+            loadCurrentQuestion();
+        }
+
+        // --- STREAMING_CHUNK:Frenzy Round Core Mechanics... ---
+        function triggerFrenzyRound() {
+            playSound('frenzy');
+            gameState.runtime.isFrenzyActive = true;
+            gameState.runtime.frenzyStreak = 0;
+            gameState.runtime.frenzyMultiplier = 1;
+            
+            // Hide normal timer, show frenzy UI
+            document.getElementById('btn-activate-frenzy').classList.add('hidden');
+            document.getElementById('game-hud-timer-container').classList.add('hidden');
+            document.getElementById('timer-bar-container').classList.add('hidden');
+            clearInterval(gameState.runtime.timerInterval);
+
+            // Show big transition
+            const intro = document.getElementById('modal-frenzy-intro');
+            intro.classList.remove('hidden');
+            
+            setTimeout(() => {
+                intro.classList.add('hidden');
+                document.getElementById('app-body').classList.add('frenzy-bg');
+                document.getElementById('frenzy-status-banner').classList.remove('hidden');
+                
+                // Start Frenzy Timer
+                const fTime = gameState.config.frenzy.duration || 60;
+                gameState.runtime.frenzyEndTime = Date.now() + (fTime * 1000);
+                startFrenzyTimer();
+                
+                // Reload current question to apply frenzy UI
+                loadCurrentQuestion();
+            }, 3000);
+        }
+
+        function startFrenzyTimer() {
+            const disp = document.getElementById('frenzy-hud-timer');
+            gameState.runtime.timerInterval = setInterval(() => {
+                if(gameState.runtime.isPaused) {
+                    gameState.runtime.frenzyEndTime += 100; // extend time while paused
+                    return;
+                }
+                const remaining = Math.max(0, Math.ceil((gameState.runtime.frenzyEndTime - Date.now()) / 1000));
+                disp.innerText = remaining;
+                
+                if (remaining <= 0) {
+                    clearInterval(gameState.runtime.timerInterval);
+                    stopFrenzyRound();
+                }
+            }, 100);
+        }
+
+        function updateFrenzyHUD() {
+            if(!gameState.runtime.isFrenzyActive) return;
+            const text = document.getElementById('frenzy-streak-text');
+            text.innerText = `Streak: ${gameState.runtime.frenzyStreak} 🔥 | Multiplier: x${gameState.runtime.frenzyMultiplier}`;
+            if(gameState.runtime.frenzyMultiplier > 1) {
+                text.classList.add('text-yellow-200', 'font-extrabold', 'scale-110');
+            } else {
+                text.classList.remove('text-yellow-200', 'font-extrabold', 'scale-110');
+            }
+        }
+
+        function stopFrenzyRound() {
+            gameState.runtime.isFrenzyActive = false;
+            clearInterval(gameState.runtime.timerInterval);
+            document.getElementById('app-body').classList.remove('frenzy-bg');
+            document.getElementById('frenzy-status-banner').classList.add('hidden');
+            
+            alertUserModal("Frenzy Round Complete! Returning to normal play.");
+            loadCurrentQuestion();
+        }
+
+        // --- STREAMING_CHUNK:Controls, Scoreboard, and Results... ---
+        function skipQuestion() {
+            playSound('click');
+            advanceToNextQuestion();
+        }
+
+        function pauseGame() {
+            playSound('click');
+            gameState.runtime.isPaused = true;
+            document.getElementById('modal-pause').classList.remove('hidden');
+        }
+
+        function resumeGame() {
+            playSound('click');
+            gameState.runtime.isPaused = false;
+            document.getElementById('modal-pause').classList.add('hidden');
+        }
+
+        function confirmStopGame() {
+            playSound('click');
+            gameState.runtime.isPaused = true;
+            document.getElementById('modal-stop-confirm').classList.remove('hidden');
+        }
+
+        function closeStopConfirm() {
+            playSound('click');
+            gameState.runtime.isPaused = false;
+            document.getElementById('modal-stop-confirm').classList.add('hidden');
+        }
+
+        function executeStopGame() {
+            playSound('click');
+            clearInterval(gameState.runtime.timerInterval);
+            document.getElementById('modal-stop-confirm').classList.add('hidden');
+            switchScreen('results');
+        }
+
+        function renderLiveScoreboardStrip() {
+            const strip = document.getElementById('live-scoreboard-strip');
+            if (!strip) return;
+            strip.innerHTML = '';
+            
+            if (gameState.settings.gameMode === 'practice' || gameState.teams.length === 0) return;
+
+            gameState.teams.forEach((t, idx) => {
+                const isCurrent = (idx === gameState.runtime.activeTeamIndex);
+                const div = document.createElement('div');
+                div.className = `flex flex-col items-center px-4 py-1 rounded-xl border-2 transition-all ${isCurrent ? 'bg-indigo-600 text-white border-indigo-400 shadow-md scale-110' : 'bg-slate-50 text-slate-700 border-slate-200'}`;
+                div.innerHTML = `<span class="text-xs font-bold truncate max-w-[100px]">${t.name}</span><span class="text-sm font-extrabold">${t.score}</span>`;
+                strip.appendChild(div);
+            });
+        }
+
+        function renderResultsScreen() {
+            const container = document.getElementById('final-scoreboard-container');
+            container.innerHTML = '';
+
+            if (gameState.settings.gameMode === 'practice' || gameState.teams.length === 0) {
+                container.innerHTML = `<p class="text-center text-slate-500 font-bold p-4">Practice Mode Complete!</p>`;
+                return;
+            }
+
+            const sorted = [...gameState.teams].sort((a, b) => b.score - a.score);
+            sorted.forEach((t, rank) => {
+                const medals = ['🥇', '🥈', '🥉'];
+                const medal = rank < 3 ? medals[rank] : `#${rank + 1}`;
+                const accuracy = (t.stats.correct + t.stats.wrong) > 0 
+                    ? Math.round((t.stats.correct / (t.stats.correct + t.stats.wrong)) * 100) : 0;
+
+                const row = document.createElement('div');
+                row.className = `flex flex-col sm:flex-row items-center justify-between p-4 rounded-2xl border-2 ${rank === 0 ? 'bg-amber-100 border-amber-300 shadow-md' : 'bg-white border-slate-200'} gap-3`;
+                row.innerHTML = `
+                    <div class="flex items-center space-x-4 w-full sm:w-auto">
+                        <span class="text-4xl w-10 text-center drop-shadow-sm">${medal}</span>
+                        <div>
+                            <h4 class="font-extrabold text-xl text-slate-800">${t.name}</h4>
+                            <p class="text-xs font-bold text-slate-500 mt-1">Accuracy: ${accuracy}% | Max Streak: ${t.stats.maxStreak}</p>
+                            ${t.stats.frenzyPts > 0 ? `<p class="text-xs font-bold text-orange-600 mt-0.5">🔥 Frenzy Pts: +${t.stats.frenzyPts}</p>` : ''}
+                        </div>
+                    </div>
+                    <div class="text-3xl font-black text-indigo-700 bg-indigo-50 px-4 py-2 rounded-xl border border-indigo-100 shadow-inner w-full sm:w-auto text-center">${t.score} PTS</div>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        // --- STREAMING_CHUNK:Teacher Dashboard & Settings... ---
+        function openTeacherModal() {
+            playSound('click');
+            document.getElementById('auth-math-input').value = '';
+            document.getElementById('modal-teacher-auth').classList.remove('hidden');
+            setTimeout(() => document.getElementById('auth-math-input').focus(), 100);
+        }
+        function openTeacherModalTo(tab) {
+            openTeacherModal();
+            gameState._pendingTab = tab;
+        }
+
+        function closeTeacherAuth() {
+            playSound('click');
+            document.getElementById('modal-teacher-auth').classList.add('hidden');
+        }
+
+        function verifyTeacherAuth() {
+            const val = parseInt(document.getElementById('auth-math-input').value);
+            if (val === 11) { // 4+7 = 11 hardcoded for demo simplicity
+                playSound('correct');
+                closeTeacherAuth();
+                openTeacherDashboard(gameState._pendingTab || 'questions');
+                gameState._pendingTab = null;
+            } else {
+                playSound('incorrect');
+                alertUserModal("Incorrect PIN/Math answer.");
+            }
+        }
+
+        function openTeacherDashboard(startTab) {
+            // Populate Configs
+            document.getElementById('config-title').value = gameState.config.title;
+            document.getElementById('config-instructions').value = gameState.config.instructions;
+            document.getElementById('config-points').value = gameState.config.defaultPoints;
+            document.getElementById('config-frenzy-default-points').value = gameState.config.defaultFrenzyPoints;
+            
+            // Frenzy Settings
+            const frenz = gameState.config.frenzy;
+            document.getElementById('config-frenzy-enable').checked = frenz.enabled;
+            document.getElementById('config-frenzy-time').value = frenz.duration;
+            document.getElementById('config-frenzy-streak').value = frenz.streakConfig;
+            document.getElementById('config-frenzy-miss').value = frenz.missPenalty;
+            updateToggleUI();
+
+            renderTeacherQuestionsList();
+            renderTeacherTeamsList();
+
+            document.getElementById('modal-teacher-dashboard').classList.remove('hidden');
+            switchTeacherTab(startTab);
+        }
+
+        function closeTeacherDashboard() {
+            playSound('click');
+            document.getElementById('modal-teacher-dashboard').classList.add('hidden');
+            saveToStorage();
+            updateMenuUI();
+        }
+
+        function switchTeacherTab(tabName) {
+            playSound('click');
+            ['questions', 'teams', 'frenzy', 'settings', 'io'].forEach(t => {
+                document.getElementById(`dash-tab-${t}`).classList.add('hidden');
+                document.getElementById(`tab-btn-${t}`).className = "px-5 py-3 font-bold text-sm rounded-t-2xl text-slate-500 hover:text-slate-800 transition";
+            });
+            document.getElementById(`dash-tab-${tabName}`).classList.remove('hidden');
+            document.getElementById(`tab-btn-${tabName}`).className = "px-5 py-3 font-bold text-sm rounded-t-2xl bg-slate-100 text-indigo-700 border-t-2 border-x-2 border-slate-200 shadow-sm relative top-[2px]";
+        }
+
+        function updateToggleUI() {
+            const chk = document.getElementById('config-frenzy-enable');
+            const dot = document.querySelector('.toggle-dot');
+            const bg = document.querySelector('.toggle-bg');
+            if(chk && dot && bg) {
+                if (chk.checked) {
+                    dot.style.transform = 'translateX(100%)';
+                    bg.classList.add('bg-emerald-500'); bg.classList.remove('bg-slate-300');
+                } else {
+                    dot.style.transform = 'translateX(0)';
+                    bg.classList.add('bg-slate-300'); bg.classList.remove('bg-emerald-500');
+                }
+            }
+        }
+        document.getElementById('config-frenzy-enable').addEventListener('change', updateToggleUI);
+
+        function saveSettings() {
+            playSound('click');
+            gameState.config.title = document.getElementById('config-title').value || "Quiz";
+            gameState.config.instructions = document.getElementById('config-instructions').value;
+            gameState.config.defaultPoints = parseInt(document.getElementById('config-points').value) || 10;
+            gameState.config.defaultFrenzyPoints = parseInt(document.getElementById('config-frenzy-default-points').value) || 25;
+            
+            gameState.config.frenzy.enabled = document.getElementById('config-frenzy-enable').checked;
+            gameState.config.frenzy.duration = parseInt(document.getElementById('config-frenzy-time').value) || 60;
+            gameState.config.frenzy.streakConfig = document.getElementById('config-frenzy-streak').value;
+            gameState.config.frenzy.missPenalty = document.getElementById('config-frenzy-miss').value;
+            
+            saveToStorage();
+            alertUserModal("Settings Saved!");
+        }
+
+        // --- STREAMING_CHUNK:Teacher Rosters & Manual Score... ---
+        function renderTeacherTeamsList() {
+            const cont = document.getElementById('teams-list-container');
+            if (!cont) return;
+            cont.innerHTML = '';
+            
+            gameState.teams.forEach((t, idx) => {
+                const row = document.createElement('div');
+                row.className = "flex flex-col sm:flex-row items-center justify-between p-3 bg-white rounded-xl border-2 border-slate-200 shadow-sm gap-3";
+                row.innerHTML = `
+                    <div class="flex items-center space-x-3 w-full sm:w-auto">
+                        <span class="font-extrabold text-slate-400">#${idx+1}</span>
+                        <input type="text" value="${t.name}" onchange="updateTeamProp('${t.id}', 'name', this.value)" class="flex-1 p-2 border border-slate-200 rounded-lg font-bold bg-slate-50 focus:bg-white w-full">
+                    </div>
+                    <div class="flex items-center space-x-2 w-full sm:w-auto justify-between">
+                        <div class="flex items-center space-x-1 bg-slate-100 p-1 rounded-lg">
+                            <button onclick="adjScore('${t.id}', -10)" class="w-8 h-8 bg-white rounded shadow-sm text-slate-600 font-bold hover:bg-slate-200">-</button>
+                            <input type="number" value="${t.score}" onchange="updateTeamProp('${t.id}', 'score', this.value)" class="w-16 text-center font-bold bg-transparent border-none focus:outline-none">
+                            <button onclick="adjScore('${t.id}', 10)" class="w-8 h-8 bg-white rounded shadow-sm text-slate-600 font-bold hover:bg-slate-200">+</button>
+                        </div>
+                        <button onclick="removeTeam('${t.id}')" class="p-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition" title="Delete">🗑️</button>
+                    </div>
+                `;
+                cont.appendChild(row);
+            });
+        }
+
+        function addTeamFromDashboard() {
+            const name = document.getElementById('new-team-input').value.trim();
+            if (!name) return;
+            gameState.teams.push({ id: 't_' + Date.now(), name, score: 0, stats: {correct:0,wrong:0,frenzyPts:0,maxStreak:0} });
+            document.getElementById('new-team-input').value = '';
+            saveToStorage(); renderTeacherTeamsList();
+        }
+        function updateTeamProp(id, prop, val) {
+            const t = gameState.teams.find(x => x.id === id);
+            if (t) {
+                t[prop] = prop === 'score' ? parseInt(val)||0 : val.trim();
+                saveToStorage();
+            }
+        }
+        function adjScore(id, amt) {
+            const t = gameState.teams.find(x => x.id === id);
+            if (t) {
+                t.score += amt;
+                saveToStorage(); renderTeacherTeamsList();
+            }
+        }
+        function removeTeam(id) {
+            gameState.teams = gameState.teams.filter(x => x.id !== id);
+            saveToStorage(); renderTeacherTeamsList();
+        }
+        function resetAllScores() {
+            if(confirm("Reset all team scores to 0?")) {
+                gameState.teams.forEach(t => { t.score = 0; t.stats = {correct:0,wrong:0,frenzyPts:0,maxStreak:0}; });
+                saveToStorage(); renderTeacherTeamsList();
+            }
+        }
+
+        // --- STREAMING_CHUNK:Question Editor & Local Image Handling... ---
+        function renderTeacherQuestionsList() {
+            const cont = document.getElementById('questions-list-container');
+            if (!cont) return;
+            cont.innerHTML = '';
+            document.getElementById('dash-q-count').innerText = gameState.questions.length;
+
+            gameState.questions.forEach((q, idx) => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-xl border-2 border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between shadow-sm gap-3 hover:border-indigo-300 transition";
+                card.innerHTML = `
+                    <div class="flex-1">
+                        <div class="flex flex-wrap items-center gap-2 mb-1">
+                            <span class="px-2 py-0.5 bg-slate-100 text-slate-600 rounded text-xs font-bold uppercase">${q.category || 'Any'}</span>
+                            <span class="text-xs font-bold text-slate-400">Q${idx + 1} (${q.type.toUpperCase()})</span>
+                            <span class="text-xs font-bold text-emerald-600 px-1 bg-emerald-50 rounded">Norm: ${q.points||10}</span>
+                            <span class="text-xs font-bold text-rose-600 px-1 bg-rose-50 rounded">🔥 Frenzy: ${q.frenzyPoints||25}</span>
+                            ${q.image ? '🖼️' : ''}
+                        </div>
+                        <h4 class="font-bold text-slate-800 text-sm">${q.text}</h4>
+                    </div>
+                    <div class="flex items-center space-x-2 self-end sm:self-auto shrink-0">
+                        <button onclick="editQuestion('${q.id}')" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg font-bold text-sm transition border border-indigo-200">Edit</button>
+                        <button onclick="deleteQuestion('${q.id}')" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg font-bold text-sm transition border border-rose-200">Del</button>
+                    </div>
+                `;
+                cont.appendChild(card);
+            });
+        }
+
+        let currentUploadedImageBase64 = null;
+
+        function openQuestionEditorModal(qId = null) {
+            playSound('click');
+            document.getElementById('edit-q-id').value = qId || '';
+            clearImageSelection(); // Reset image state
+
+            if (qId) {
+                const q = gameState.questions.find(x => x.id === qId);
+                if (q) {
+                    document.getElementById('modal-q-editor-title').innerText = "Edit Question";
+                    document.getElementById('edit-q-text').value = q.text;
+                    document.getElementById('edit-q-type').value = q.type;
+                    document.getElementById('edit-q-category').value = q.category || 'General';
+                    document.getElementById('edit-q-points').value = q.points || gameState.config.defaultPoints;
+                    document.getElementById('edit-q-frenzy-points').value = q.frenzyPoints || gameState.config.defaultFrenzyPoints;
+                    document.getElementById('edit-q-hint').value = q.hint || '';
+                    
+                    if(q.image) {
+                        if(q.image.startsWith('data:')) {
+                            currentUploadedImageBase64 = q.image;
+                            showImagePreview(q.image);
+                        } else {
+                            document.getElementById('edit-q-image-url').value = q.image;
+                            showImagePreview(q.image);
+                        }
+                    }
+
+                    onQuestionTypeChange();
+                    if (q.type === 'short') document.getElementById('edit-short-correct').value = q.correctAnswer;
+                    else {
+                        for (let i=0; i<4; i++) {
+                            const inp = document.getElementById(`edit-opt-${i}`);
+                            if(inp) inp.value = q.options[i] || '';
+                        }
+                        const r = document.querySelector(`input[name="correct-radio"][value="${q.correctAnswer}"]`);
+                        if(r) r.checked = true;
+                    }
+                }
+            } else {
+                document.getElementById('modal-q-editor-title').innerText = "Add New Question";
+                document.getElementById('edit-q-text').value = '';
+                document.getElementById('edit-q-type').value = 'mc';
+                document.getElementById('edit-q-category').value = 'General';
+                document.getElementById('edit-q-points').value = gameState.config.defaultPoints;
+                document.getElementById('edit-q-frenzy-points').value = gameState.config.defaultFrenzyPoints;
+                document.getElementById('edit-q-hint').value = '';
+                onQuestionTypeChange();
+                for (let i=0; i<4; i++) document.getElementById(`edit-opt-${i}`).value = '';
+            }
+            document.getElementById('modal-question-editor').classList.remove('hidden');
+        }
+
+        function closeQuestionEditorModal() {
+            document.getElementById('modal-question-editor').classList.add('hidden');
+        }
+
+        // Local Image Resizer Logic
+        document.getElementById('edit-q-image-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if(!file) return;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.getElementById('image-resize-canvas');
+                    const ctx = canvas.getContext('2d');
+                    
+                    // Max dimensions to prevent massive base64 strings breaking localStorage
+                    const MAX_WIDTH = 500;
+                    const MAX_HEIGHT = 400;
+                    let width = img.width;
+                    let height = img.height;
+                    
+                    if (width > height) {
+                        if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; }
+                    } else {
+                        if (height > MAX_HEIGHT) { width *= MAX_HEIGHT / height; height = MAX_HEIGHT; }
+                    }
+                    
+                    canvas.width = width;
+                    canvas.height = height;
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // Compress
+                    currentUploadedImageBase64 = dataUrl;
+                    document.getElementById('edit-q-image-url').value = ''; // Clear URL if local used
+                    showImagePreview(dataUrl);
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function showImagePreview(src) {
+            document.getElementById('image-preview').src = src;
+            document.getElementById('image-preview-container').classList.remove('hidden');
+        }
+        function clearImageSelection() {
+            currentUploadedImageBase64 = null;
+            document.getElementById('edit-q-image-url').value = '';
+            document.getElementById('edit-q-image-file').value = '';
+            document.getElementById('image-preview-container').classList.add('hidden');
+        }
+
+        function onQuestionTypeChange() {
+            const type = document.getElementById('edit-q-type').value;
+            const optCont = document.getElementById('edit-q-options-container');
+            const shortCont = document.getElementById('edit-q-short-container');
+
+            if (type === 'short') {
+                optCont.classList.add('hidden');
+                shortCont.classList.remove('hidden');
+            } else if (type === 'tf') {
+                optCont.classList.remove('hidden'); shortCont.classList.add('hidden');
+                document.getElementById('edit-opt-0').value = 'True';
+                document.getElementById('edit-opt-1').value = 'False';
+                document.getElementById('edit-opt-2').parentElement.classList.add('hidden');
+                document.getElementById('edit-opt-3').parentElement.classList.add('hidden');
+            } else {
+                optCont.classList.remove('hidden'); shortCont.classList.add('hidden');
+                document.getElementById('edit-opt-2').parentElement.classList.remove('hidden');
+                document.getElementById('edit-opt-3').parentElement.classList.remove('hidden');
+                if(document.getElementById('edit-opt-0').value === 'True') {
+                    document.getElementById('edit-opt-0').value=''; document.getElementById('edit-opt-1').value='';
+                }
+            }
+        }
+
+        function saveQuestionFromModal() {
+            const qId = document.getElementById('edit-q-id').value;
+            const text = document.getElementById('edit-q-text').value.trim();
+            const type = document.getElementById('edit-q-type').value;
+            if (!text) return alertUserModal("Please enter question text.");
+
+            let options = [], correctAnswer = "0";
+            if (type === 'short') {
+                correctAnswer = document.getElementById('edit-short-correct').value.trim();
+                if (!correctAnswer) return alertUserModal("Enter a correct answer.");
+            } else {
+                for(let i=0; i<(type==='tf'?2:4); i++) options.push(document.getElementById(`edit-opt-${i}`).value.trim());
+                const r = document.querySelector('input[name="correct-radio"]:checked');
+                correctAnswer = r ? r.value : "0";
+            }
+
+            // Determine image source (Base64 overrides URL)
+            const urlVal = document.getElementById('edit-q-image-url').value.trim();
+            const finalImage = currentUploadedImageBase64 || urlVal || '';
+
+            const qObj = {
+                id: qId || 'q_' + Date.now(),
+                text, type, options, correctAnswer,
+                hint: document.getElementById('edit-q-hint').value.trim(),
+                points: parseInt(document.getElementById('edit-q-points').value) || 10,
+                frenzyPoints: parseInt(document.getElementById('edit-q-frenzy-points').value) || 25,
+                category: document.getElementById('edit-q-category').value.trim(),
+                image: finalImage
+            };
+
+            if (qId) {
+                const idx = gameState.questions.findIndex(x => x.id === qId);
+                if (idx !== -1) gameState.questions[idx] = qObj;
+            } else gameState.questions.push(qObj);
+
+            saveToStorage(); closeQuestionEditorModal(); renderTeacherQuestionsList();
+            playSound('correct');
+        }
+
+        function editQuestion(qId) { openQuestionEditorModal(qId); }
+        function deleteQuestion(qId) {
+            if(confirm("Delete this question?")) {
+                gameState.questions = gameState.questions.filter(x => x.id !== qId);
+                saveToStorage(); renderTeacherQuestionsList();
+            }
+        }
+
+        // --- STREAMING_CHUNK:IO Data Backup and Utility ---
+        function downloadJSONBackup() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(gameState));
+            const a = document.createElement('a');
+            a.href = dataStr; a.download = "quiz_wiz_pro_backup.json";
+            document.body.appendChild(a); a.click(); a.remove();
+        }
+        function downloadCSVSample() {
+            const csv = "id,text,type,option0,option1,option2,option3,correctAnswer,hint,points,frenzyPoints,category,image\n" +
+                "q_s1,What is 9 x 9?,mc,72,81,90,79,1,9s table,10,30,Math,\n" +
+                "q_s2,True or False: 100 / 2 = 50.,tf,True,False, , ,0,,10,20,Math,";
+            const a = document.createElement('a');
+            a.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
+            a.download = 'quiz_template.csv';
+            document.body.appendChild(a); a.click(); a.remove();
+        }
+        function handleFileUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const r = new FileReader();
+            r.onload = function(evt) {
+                const content = evt.target.result;
+                if (file.name.endsWith('.json')) {
+                    try {
+                        const p = JSON.parse(content);
+                        if (p.questions) {
+                            gameState = { ...gameState, ...p };
+                            saveToStorage(); renderTeacherQuestionsList(); renderTeacherTeamsList();
+                            alertUserModal("Backup loaded successfully!");
+                        } else alertUserModal("Invalid JSON.");
+                    } catch (err) { alertUserModal("Error parsing JSON."); }
+                } else if (file.name.endsWith('.csv')) {
+                    try {
+                        const lines = content.split('\n'); let newQ = [];
+                        for (let i=1; i<lines.length; i++) {
+                            const c = lines[i].split(',');
+                            if (c.length >= 8 && c[1].trim()) {
+                                newQ.push({
+                                    id: c[0] || 'q_'+Date.now()+i, text: c[1], type: c[2]||'mc',
+                                    options: [c[3]||'', c[4]||'', c[5]||'', c[6]||''],
+                                    correctAnswer: c[7]||'0', hint: c[8]||'',
+                                    points: parseInt(c[9])||10, frenzyPoints: parseInt(c[10])||25,
+                                    category: c[11]||'Import', image: c[12]||''
+                                });
+                            }
+                        }
+                        if (newQ.length > 0) { gameState.questions = newQ; saveToStorage(); renderTeacherQuestionsList(); alertUserModal(`Imported ${newQ.length} Qs!`); }
+                    } catch (err) { alertUserModal("Error parsing CSV."); }
+                }
+            };
+            r.readAsText(file);
+        }
+        function resetToDefaultData() {
+            if(confirm("Factory reset? All current questions and settings will be lost.")) {
+                localStorage.removeItem('cqw_pro_state');
+                location.reload();
+            }
+        }
+
+        // --- UTILITY MODAL ALERT ---
+        function alertUserModal(msg) {
+            const ex = document.getElementById('alert-modal');
+            if (ex) ex.remove();
+            const modal = document.createElement('div');
+            modal.id = 'alert-modal';
+            modal.className = 'fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 fade-in';
+            modal.innerHTML = `
+                <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border-4 border-indigo-200 text-center space-y-4">
+                    <div class="text-5xl">💡</div>
+                    <p class="text-slate-800 font-extrabold text-lg">${msg}</p>
+                    <button onclick="document.getElementById('alert-modal').remove()" class="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-md transition">Got it</button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+    </script>
+</body>
+</html>
